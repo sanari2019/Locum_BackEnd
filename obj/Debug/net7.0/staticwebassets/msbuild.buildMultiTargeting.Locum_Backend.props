@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\Locum_Backend.props" />
+</Project>
