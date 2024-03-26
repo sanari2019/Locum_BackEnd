@@ -10,6 +10,8 @@ namespace Locum_Backend.Models
         public required string first_Name { get; set; }
         public required string last_Name { get; set; }
         public required string uhid { get; set; }
+        public required string wardName { get; set; }
+        public required string roomNo { get; set; }
         public bool Is_Validated { get; set; }
         public DateTime Created_At { get; set; }
     }

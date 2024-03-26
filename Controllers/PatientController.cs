@@ -12,12 +12,16 @@ namespace Locum_Backend.Controllers
         private readonly PatientRepository _patientRepository;
         private readonly ApprovalRequestRepository _approvalRequest;
         private readonly UserRepository _userRequest;
+        private readonly ValidatedPatientRepository _validpatientRequest;
+        private readonly WardRepository _wardRepository;
 
-        public PatientController(PatientRepository patientRepository, ApprovalRequestRepository approvalRequest, UserRepository userRequest)
+        public PatientController(WardRepository wardRepository, PatientRepository patientRepository, ApprovalRequestRepository approvalRequest, UserRepository userRequest, ValidatedPatientRepository validpatientRequest)
         {
             _patientRepository = patientRepository;
             _approvalRequest = approvalRequest;
             _userRequest = userRequest;
+            _validpatientRequest = validpatientRequest;
+            _wardRepository = wardRepository;
         }
 
         [HttpGet]
@@ -45,19 +49,43 @@ namespace Locum_Backend.Controllers
             {
                 return BadRequest();
             }
+            var validd = _validpatientRequest.GetValidatedPatient(request.patient);
+            var ward = _wardRepository.GetDepartmentById(request.approvalRequest.ward_id);
+            request.approvalRequest.department_id = request.approvalRequest.ward_id;
+
+            if (validd.Status != "0")
+            {
+                if (validd.WardName == ward.ward_name)
+                {
+                    var pat = new Patient
+                    {
+                        first_Name = validd.Patient,
+                        last_Name = validd.Patient,
+                        uhid = request.patient.UHID,
+                        wardName = validd.WardName,
+                        roomNo = validd.RoomNo,
+                        Is_Validated = true,
+                        Created_At = DateTime.Now
+                    };
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
-            request.patient.Is_Validated = true;
+                    // request.patient.Is_Validated = true;
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
-            request.patient.Created_At = DateTime.Now;
-            _patientRepository.InsertPatient(request.patient);
+                    // request.patient.Created_At = DateTime.Now;
+                    _patientRepository.InsertPatient(pat);
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
-            request.approvalRequest.Created_At = DateTime.Now;
+                    request.approvalRequest.Created_At = DateTime.Now;
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
-            request.approvalRequest.Date_Entered = DateTime.Now;
-            request.approvalRequest.Patient_Id = request.patient.Id;
-            _approvalRequest.InsertRequest(request.approvalRequest);
-            return CreatedAtAction(nameof(GetPatient), new { id = request.patient.Id }, request.patient);
+                    request.approvalRequest.Date_Entered = DateTime.Now;
+                    request.approvalRequest.Patient_Id = pat.Id;
+                    _approvalRequest.InsertRequest(request.approvalRequest);
+                    return Ok(validd);
+                }
+                validd.Comment = "Patient not in that ward";
+            }
+
+
+            return Ok(validd);
         }
 
         [HttpPost("updatepatient")]

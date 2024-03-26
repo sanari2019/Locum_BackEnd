@@ -16,6 +16,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Web;
 using Microsoft.Extensions.Configuration;
+using System.Dynamic;
 
 namespace Locum_Backend.Repositories // Adjust the namespace as per your project structure
 {
@@ -172,6 +173,16 @@ namespace Locum_Backend.Repositories // Adjust the namespace as per your project
 #pragma warning restore CS8603 // Possible null reference return.
             }
         }
+        public UsersRoles GetUserRoleByEmpId(int employee_type_id)
+        {
+            using (var connection = new SqlConnection(sett.ConnectionStrings))
+            {
+                var sql = "SELECT * FROM usersroles WHERE employee_type_id = @employee_type_id";
+#pragma warning disable CS8603 // Possible null reference return.
+                return connection.Query<UsersRoles>(sql, new { employee_type_id}).FirstOrDefault();
+#pragma warning restore CS8603 // Possible null reference return.
+            }
+        }
 
         public List<UsersRoles> GetUserRolesByUserIdFromView(int userId)
         {
@@ -262,6 +273,135 @@ namespace Locum_Backend.Repositories // Adjust the namespace as per your project
             }
         }
     }
+
+    public class WardRepository : BaseRepository<WardNames, SqlConnection>
+    {
+        Setting sett = new Setting();
+
+        public WardRepository(Setting sett) : base(sett.ConnectionStrings)
+        {
+            this.sett = sett;
+            DbSettingMapper.Add<SqlConnection>(new SqlServerDbSetting(), true);
+            DbHelperMapper.Add<SqlConnection>(new SqlServerDbHelper(), true);
+            StatementBuilderMapper.Add<SqlConnection>(new SqlServerStatementBuilder(new SqlServerDbSetting()), true);
+        }
+
+        // public void InsertDepartment(Department department)
+        // {
+        //     using (var connection = new SqlConnection(sett.ConnectionStrings))
+        //     {
+        //         connection.Insert(department);
+        //     }
+        // }
+
+        public List<WardNames> GetDepartments()
+        {
+            var wards = new List<WardNames>();
+            using (var connection = new SqlConnection(sett.ConnectionStrings))
+            {
+                wards = connection.QueryAll<WardNames>().ToList();
+            }
+            return wards;
+        }
+
+        public WardNames GetDepartmentById(int id)
+        {
+            using (var connection = new SqlConnection(sett.ConnectionStrings))
+            {
+#pragma warning disable CS8603 // Possible null reference return.
+                return connection.Query<WardNames>(id).FirstOrDefault();
+#pragma warning restore CS8603 // Possible null reference return.
+            }
+        }
+
+
+    }
+
+
+
+
+
+    public class WardSupervisorRepository : BaseRepository<WardSupervisor, SqlConnection>
+    {
+        Setting sett = new Setting();
+
+        public WardSupervisorRepository(Setting sett) : base(sett.ConnectionStrings)
+        {
+            this.sett = sett;
+            DbSettingMapper.Add<SqlConnection>(new SqlServerDbSetting(), true);
+            DbHelperMapper.Add<SqlConnection>(new SqlServerDbHelper(), true);
+            StatementBuilderMapper.Add<SqlConnection>(new SqlServerStatementBuilder(new SqlServerDbSetting()), true);
+        }
+
+        // public void InsertDepartment(Department department)
+        // {
+        //     using (var connection = new SqlConnection(sett.ConnectionStrings))
+        //     {
+        //         connection.Insert(department);
+        //     }
+        // }
+
+        public List<WardSupervisor> GetDepartments()
+        {
+            var wards = new List<WardSupervisor>();
+            using (var connection = new SqlConnection(sett.ConnectionStrings))
+            {
+                wards = connection.QueryAll<WardSupervisor>().ToList();
+            }
+            return wards;
+        }
+
+        public WardSupervisor GetDepartmentById(int id)
+        {
+            using (var connection = new SqlConnection(sett.ConnectionStrings))
+            {
+#pragma warning disable CS8603 // Possible null reference return.
+                return connection.Query<WardSupervisor>(id).FirstOrDefault();
+#pragma warning restore CS8603 // Possible null reference return.
+            }
+        }
+        public WardSupervisor GetSupervisorByWardId(int wardId)
+        {
+            using (var connection = new SqlConnection(sett.ConnectionStrings))
+            {
+                return connection.Query<WardSupervisor>(e => e.ward_id == wardId && e.active == true).FirstOrDefault();
+            }
+        }
+
+        public WardSupervisor GetSupervisorByUserId(int user_id)
+        {
+            using (var connection = new SqlConnection(sett.ConnectionStrings))
+            {
+                return connection.Query<WardSupervisor>(e => e.user_id == user_id && e.active == true).FirstOrDefault();
+            }
+        }
+        public List<WardSupervisor> GetAllWardsBySupervisor(int user_id)
+        {
+            using (var connection = new SqlConnection(sett.ConnectionStrings))
+            {
+                string query = @"
+               SELECT * from
+                WardSupervisor ws join wardNames w ON ws.ward_id = w.Id 
+                WHERE ws.user_id = @user_id";
+
+                return connection.ExecuteQuery<WardSupervisor>(query, new { user_id }).ToList();
+            }
+        }
+
+
+        //         public WardNames GetDepartmentById(int id)
+        //         {
+        //             using (var connection = new SqlConnection(sett.ConnectionStrings))
+        //             {
+        // #pragma warning disable CS8603 // Possible null reference return.
+        //                 return connection.Query<WardNames>(id).FirstOrDefault();
+        // #pragma warning restore CS8603 // Possible null reference return.
+        //             }
+        //         }
+    }
+
+
+
 
     public class ShiftRepository : BaseRepository<Shift, SqlConnection>
     {
@@ -603,10 +743,15 @@ namespace Locum_Backend.Repositories // Adjust the namespace as per your project
                         // var parameters = new { Approval_Request_Id = approvalRequestId };
                         // return connection.ExecuteQuery<RequestFormPatient>(query, parameters).FirstOrDefault();
 
-                        sv.department = connection.Query<Department>(sv.approvalDetails.department_Id).FirstOrDefault();
+                        // sv.department = connection.Query<Department>(sv.approvalDetails.department_Id).FirstOrDefault();
                         sv.user = connection.Query<User>(sv.approvalDetails.entered_By_User_Id).FirstOrDefault();
                         sv.shift = connection.Query<Shift>(sv.approvalDetails.shift_Id).FirstOrDefault();
-                        sv.patient = connection.Query<Patient>(sv.approvalDetails.patient_Id).FirstOrDefault();
+                        // // sv.patient = connection.Query<Patient>(sv.approvalDetails.patient_Id).FirstOrDefault();
+                        sv.wardname = connection.Query<WardNames>(sv.ward_id).FirstOrDefault();
+                        // sv.wardSupervisor = connection.ExecuteQuery<WardSupervisor>(
+                        //      "SELECT * FROM [Locum].[dbo].[wardSupervisor] Where ward_id = @ward_Id and active=1",
+                        //     new { ward_id = sv.ward_id }
+                        // ).FirstOrDefault();
                         // sv.Shift = connection.Query<Shift>(sv.ShiftId).FirstOrDefault();
                     }
                 }
@@ -619,7 +764,7 @@ namespace Locum_Backend.Repositories // Adjust the namespace as per your project
             return decidedRequests;
         }
 
-        public List<RequestFormPatient> GetSupApprovalRequests()
+        public List<RequestFormPatient> GetSupApprovalRequests(int ward_id)
         {
             var decidedRequests = new List<RequestFormPatient>();
             try
@@ -627,7 +772,7 @@ namespace Locum_Backend.Repositories // Adjust the namespace as per your project
                 using (var connection = new SqlConnection(sett.ConnectionStrings))
                 {
                     // Assuming getpendingrequestsbyuserid is the stored procedure
-                    decidedRequests = connection.ExecuteQuery<RequestFormPatient>("[dbo].[usp_getSupPendingRequests]",
+                    decidedRequests = connection.ExecuteQuery<RequestFormPatient>("[dbo].[usp_getSupPendingRequests]", new { ward_id },
                           commandType: System.Data.CommandType.StoredProcedure
                       ).ToList();
                     foreach (RequestFormPatient sv in decidedRequests)
@@ -653,10 +798,14 @@ namespace Locum_Backend.Repositories // Adjust the namespace as per your project
                         // var parameters = new { Approval_Request_Id = approvalRequestId };
                         // return connection.ExecuteQuery<RequestFormPatient>(query, parameters).FirstOrDefault();
 
-                        sv.department = connection.Query<Department>(sv.approvalDetails.department_Id).FirstOrDefault();
+                        sv.wardname = connection.Query<WardNames>(sv.ward_id).FirstOrDefault();
+                        //     sv.wardSupervisor = connection.ExecuteQuery<WardSupervisor>(
+                        //         "SELECT * FROM [Locum].[dbo].[wardSupervisor] Where ward_id = @ward_id and active=1",
+                        //        new { ward_id = sv.ward_id }
+                        //    ).FirstOrDefault();
                         sv.user = connection.Query<User>(sv.approvalDetails.entered_By_User_Id).FirstOrDefault();
                         sv.shift = connection.Query<Shift>(sv.approvalDetails.shift_Id).FirstOrDefault();
-                        sv.patient = connection.Query<Patient>(sv.approvalDetails.patient_Id).FirstOrDefault();
+                        // sv.patient = connection.Query<Patient>(sv.approvalDetails.patient_Id).FirstOrDefault();
 
 
                     }
@@ -750,7 +899,7 @@ namespace Locum_Backend.Repositories // Adjust the namespace as per your project
                 using (var connection = new SqlConnection(sett.ConnectionStrings))
                 {
                     return connection.ExecuteQuery<DistinctUserRequestViewModel>(
-                                                "SELECT TOP (1000) * FROM [Locum].[dbo].[vw_DistinctUserRequestView] where entered_by_user_id=@entered_by_user_id",
+                                                "SELECT TOP (1000) * FROM [Locum].[dbo].[vw_DistinctUserRequestView] where entered_by_user_id=@entered_by_user_id order by id desc",
                             new { entered_by_user_id = enteredByUserId }
                         ).ToList();
                     // connection.Query<ApprovalDetails>(e => e.ApprovalRequestId == approvalRequestId).FirstOrDefault();
@@ -952,5 +1101,36 @@ namespace Locum_Backend.Repositories // Adjust the namespace as per your project
     }
 
 
+    public class ValidatedPatientRepository : BaseRepository<ValidatedPatient, SqlConnection>
+    {
+        Setting sett = new Setting();
 
+        public ValidatedPatientRepository(Setting sett) : base(sett.ConnectionStrings)
+        {
+            this.sett = sett;
+            DbSettingMapper.Add<SqlConnection>(new SqlServerDbSetting(), true);
+            DbHelperMapper.Add<SqlConnection>(new SqlServerDbHelper(), true);
+            StatementBuilderMapper.Add<SqlConnection>(new SqlServerStatementBuilder(new SqlServerDbSetting()), true);
+        }
+
+
+
+        public ValidatedPatient GetValidatedPatient(NursedPatient nursed)
+        {
+            ValidatedPatient vpatient;
+
+            using (var connection = new SqlConnection(sett.ConnectionStrings))
+            {
+                var query = "dbo.ValidateAdmission @UHID, @Shiftid, @shiftdate";
+                vpatient = connection.ExecuteQuery<ValidatedPatient>(query, new
+                {
+                    UHID = nursed.UHID,
+                    Shiftid = nursed.ShiftId,
+                    shiftdate = nursed.DateNursed
+                }).FirstOrDefault();
+            }
+
+            return vpatient;
+        }
+    }
 }

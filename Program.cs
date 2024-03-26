@@ -20,7 +20,15 @@ using Microsoft.Data.SqlClient;
 
 
 var builder = WebApplication.CreateBuilder(args);
+// Add services to the container.
+var emailConfig = builder.Configuration
+    .GetSection("EmailConfiguration")
+    .Get<EmailConfiguration>();
+builder.Services.AddSingleton(emailConfig); // Provide a default configuration if null
 
+// builder.Services.AddSingleton<EmailConfiguration>(emailConfig);
+
+builder.Services.AddScoped<IEmailSender, EmailSender>();
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -43,7 +51,10 @@ builder.Services.AddSingleton<ShiftRepository>();
 builder.Services.AddSingleton<ApprovalRequestRepository>();
 builder.Services.AddSingleton<ApprovalRepository>();
 builder.Services.AddScoped<UsersRolesRepository>();
+builder.Services.AddScoped<WardSupervisorRepository>();
+builder.Services.AddScoped<WardRepository>();
 builder.Services.AddScoped<PatientRepository>();
+builder.Services.AddScoped<ValidatedPatientRepository>();
 builder.Services.AddScoped<RequestFormPatientRepository>();
 builder.Services.AddRazorPages();
 builder.Services.AddSignalR();

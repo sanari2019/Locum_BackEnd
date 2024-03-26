@@ -26,8 +26,9 @@ namespace Locum_Backend.Controllers
         private readonly UsersRolesRepository _userRolesRepository;
         private readonly EmployeeTypeRepository _emptypRepository;
         private readonly ApprovalRepository _approvalRepository;
+        private readonly WardSupervisorRepository _wardsupervisorRepository;
 
-        public ApprovalRequestController(ApprovalRequestRepository requestMainRepository, RequestFormPatientRepository requestFPRepository, PatientRepository patientRepository, UserRepository userRepository, UsersRolesRepository userRolesRepository, EmployeeTypeRepository emptypRepository, ApprovalRepository approvalRepository)
+        public ApprovalRequestController(WardSupervisorRepository wardsupervisorRepository, ApprovalRequestRepository requestMainRepository, RequestFormPatientRepository requestFPRepository, PatientRepository patientRepository, UserRepository userRepository, UsersRolesRepository userRolesRepository, EmployeeTypeRepository emptypRepository, ApprovalRepository approvalRepository)
         {
             _requestMainRepository = requestMainRepository;
             _requestFPRepository = requestFPRepository;
@@ -36,6 +37,7 @@ namespace Locum_Backend.Controllers
             _userRolesRepository = userRolesRepository;
             _emptypRepository = emptypRepository;
             _approvalRepository = approvalRepository;
+            _wardsupervisorRepository = wardsupervisorRepository;
         }
 
         [HttpGet]
@@ -180,11 +182,18 @@ namespace Locum_Backend.Controllers
         {
             var info = _userRolesRepository.GetEmployeeTypeFromUserId(user_id);
             var employeeType = _emptypRepository.GetEmpTypeById(info.Employee_Type_Id);
+            var wardsupervisor = _wardsupervisorRepository.GetSupervisorByUserId(user_id);
+            var wards = _wardsupervisorRepository.GetAllWardsBySupervisor(user_id);
+
             if (employeeType != null)
             {
 
             }
-            return new OkObjectResult(_requestMainRepository.GetSupApprovalRequests());
+            foreach (var ward in wards)
+            {
+
+            }
+            return NoContent();
 
         }
         [HttpGet("getcnopendingrequest/{user_id}")]
@@ -192,6 +201,8 @@ namespace Locum_Backend.Controllers
         {
             var info = _userRolesRepository.GetEmployeeTypeFromUserId(user_id);
             var employeeType = _emptypRepository.GetEmpTypeById(info.Employee_Type_Id);
+            var wardsupervisor = _wardsupervisorRepository.GetSupervisorByUserId(user_id);
+            var wards = _wardsupervisorRepository.GetAllWardsBySupervisor(user_id);
 
             if (employeeType.type_Name == "CNO")
             {
@@ -199,7 +210,13 @@ namespace Locum_Backend.Controllers
             }
             else if (employeeType.type_Name == "Supervisor")
             {
-                return new OkObjectResult(_requestMainRepository.GetSupApprovalRequests());
+                var requests = new List<RequestFormPatient>();
+                foreach (var ward in wards)
+                {
+                    var wardRequests = _requestMainRepository.GetSupApprovalRequests(ward.ward_id);
+                    requests.AddRange(wardRequests);
+                }
+                return new OkObjectResult(requests);
             }
 
             // Handle other cases or return an appropriate response if needed

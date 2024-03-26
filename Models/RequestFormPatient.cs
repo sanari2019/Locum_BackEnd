@@ -12,16 +12,19 @@ namespace Locum_Backend.Models
         public bool Is_Submitted { get; set; }
         public string? first_Name { get; set; }
         public string? last_Name { get; set; }
+        public int ward_id { get; set; }
 
 
         public int userId { get; set; }
         public ApprovalRequest? approvalRequest { get; set; }
         public Approval? approval { get; set; }
-        public Department? department { get; set; }
+        // public Department? department { get; set; }
         public User? user { get; set; }
         public Shift? shift { get; set; }
         public ApprovalDetails? approvalDetails { get; set; }
-        public Patient? patient { get; set; }
+        // public Patient? patient { get; set; }
+        public WardNames? wardname { get; set; }
+        // public WardSupervisor? wardSupervisor { get; set; }
 
     }
 }

@@ -20,11 +20,13 @@ namespace Locum_Backend.Controllers
     {
         private readonly UserRepository _userRepository;
         private readonly UsersRolesRepository _userRoleRepository;
+        private EmailConfiguration _emailConfig;
 
-        public UsersController(UserRepository userRepository, UsersRolesRepository userRoleRepository)
+        public UsersController(EmailConfiguration emailConfig, UserRepository userRepository, UsersRolesRepository userRoleRepository)
         {
             _userRepository = userRepository;
             _userRoleRepository = userRoleRepository;
+            _emailConfig = emailConfig;
         }
 
         // GET: api/users
@@ -109,6 +111,39 @@ namespace Locum_Backend.Controllers
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        [HttpPost("ForgotPassword")]
+        public IActionResult ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest();
+
+            var user = _userRepository.GetUserByEmail(forgotPasswordDto.Email);
+            if (user == null)
+                return BadRequest("User does  not exists");
+
+            var token = GenerateJwtToken(user);
+            var param = new Dictionary<string, string?>
+    {
+        {"token", token },
+        {"email", forgotPasswordDto.Email }
+    };
+    string clientUrlWithToken = $"{forgotPasswordDto.ClientURI}?token={token}";
+
+            EmailSender _emailSender = new EmailSender(this._emailConfig);
+            Email em = new Email();
+            string logourl = "";//"https://evercaregroup.com/wp-content/uploads/2020/12/EVERCARE_LOGO_03_LEKKI_PRI_FC_RGB.png";
+            string applink = "https://cafeteria.evercare.ng";
+            string salutation = "Hello" + ",";
+            string emailcontent = "An password reset request have been initiated by: " + forgotPasswordDto.ClientURI;
+            string narration1 = " ";
+            string econtent = em.HtmlMail("Reset password token", applink, salutation, emailcontent, narration1, logourl);
+            var message = new Message(new string[] { forgotPasswordDto.Email }, new string[] { forgotPasswordDto.Email }, "Locum Password Restet", econtent);
+            _emailSender.SendEmail(message);
+
+
+            return Ok();
         }
 
 
